@@ -40,5 +40,6 @@ if __name__ == '__main__':
     norm = ActNorm(8)
     x = torch.randn(4, 8, 16, 16)
     y, logdet = norm(x)
-    print(y.shape)
-    print(logdet)
+    xr = norm.reverse(y)
+    print(x[0,0])
+    print(xr[0,0])

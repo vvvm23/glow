@@ -41,9 +41,10 @@ class InvConv(HelperModule):
         return F.conv2d(x, self.weight.squeeze().inverse()[..., None, None])
 
 if __name__ == '__main__':
-    conv = InvConv(8, lu=True)
+    conv = InvConv(8, lu=False)
     x = torch.randn(4,8,16,16)
     y, logdet = conv(x)
-
-    print(y.shape)
-    print(logdet)
+    xr = conv.reverse(y)
+    
+    print(x[0,0])
+    print(xr[0,0])
