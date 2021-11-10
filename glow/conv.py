@@ -15,6 +15,7 @@ class InvConv(HelperModule):
         if self.lu:
             raise NotImplementedError("LU decomposition method not implemented yet!")
         else:
+            # initialize as a random rotation matrix
             self.register_parameter(
                 'weight', 
                 nn.Parameter(torch.linalg.qr(torch.randn(nb_channels, nb_channels))[0][..., None, None]) 
