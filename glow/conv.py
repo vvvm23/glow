@@ -13,7 +13,7 @@ class InvConv(HelperModule):
         self.lu = lu
 
         if self.lu:
-            pass
+            raise NotImplementedError("LU decomposition method not implemented yet!")
         else:
             self.register_parameter(
                 'weight', 
@@ -41,7 +41,7 @@ class InvConv(HelperModule):
         return F.conv2d(x, self.weight.squeeze().inverse()[..., None, None])
 
 if __name__ == '__main__':
-    conv = InvConv(8, lu=False)
+    conv = InvConv(8, lu=True)
     x = torch.randn(4,8,16,16)
     y, logdet = conv(x)
 

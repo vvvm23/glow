@@ -15,8 +15,8 @@ class ActNorm(HelperModule):
 
     @torch.no_grad()
     def intialize(self, x):
-        _, c, _ _ = x.shape
-        flatten = x.permute(1, 0, 2, 3).view(c, -1)
+        _, c, _, _ = x.shape
+        flatten = x.permute(1, 0, 2, 3).contiguous().view(c, -1)
 
         mean = flatten.mean(-1)[..., None, None, None].permute(1, 0, 2, 3)
         std = flatten.std(-1)[..., None, None, None].permute(1, 0, 2, 3)
@@ -31,7 +31,14 @@ class ActNorm(HelperModule):
             self.intialize(x)
 
         _, _, hx, wx = x.shape
-        return self.scale * (x + self.loc), hw * wx * self.scale.abs().log().sum()
+        return self.scale * (x + self.loc), hx * wx * self.scale.abs().log().sum()
 
     def reverse(self, x):
         return x / self.scale - self.loc
+
+if __name__ == '__main__':
+    norm = ActNorm(8)
+    x = torch.randn(4, 8, 16, 16)
+    y, logdet = norm(x)
+    print(y.shape)
+    print(logdet)
