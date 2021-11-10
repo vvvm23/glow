@@ -26,7 +26,6 @@ class ActNorm(HelperModule):
 
         self.initialized.fill_(1)
         
-    # TODO: do I need to return logdet?
     def forward(self, x):
         if not self.initialized.item():
             self.intialize(x)
