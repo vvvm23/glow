@@ -4,22 +4,55 @@ import torch.nn.functional as F
 
 from .utils import HelperModule
 
+# TODO: worth also implementing additive coupling?
 class AffineCoupling(HelperModule):
-    def build(self):
-        pass
+    def build(self,
+            nb_channels: int,
+            hidden_channels: int = 512,
+        ):
+        self.net = nn.Sequential(
+            nn.Conv2d(nb_channels // 2, hidden_channels, 3, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(hidden_channels, hidden_channels, 1),
+            nn.SiLU(),
+            nn.Conv2d(hidden_channels, nb_channels, 3, padding=1)
+        )
+        self.net[0].weight.data.normal_(0, 0.05)
+        self.net[0].bias.data.zero_()
 
-    def forward(self):
-        pass
+        self.net[2].weight.data.normal_(0, 0.05)
+        self.net[2].bias.data.zero_()
 
-    def reverse(self):
-        pass
+        self.net[4].weight.data.zero_()
+        self.net[4].bias.data.zero_()
 
-class AdditiveCoupling(HelperModule):
-    def build(self):
-        pass
+        self.scale = nn.Parameter(torch.zeros(1, nb_channels, 1, 1))
 
-    def forward(self):
-        pass
+    def forward(self, x):
+        N, *_ = x.shape
+        x_a, x_b = x.chunk(2, dim=1)
+        
+        nn_out = self.net(x_a)
+        log_s, t = (nn_out * torch.exp(self.scale * 3)).chunk(2, dim=1) # why *3?
+        s = F.sigmoid(log_s + 2) # again, why +2?
+        y = (x_b + t) * s
 
-    def reverse(self):
-        pass
+        return torch.cat([x_a, y], dim=1), torch.sum(torch.log(s).view(N, -1), dim=-1)
+
+    def reverse(self, x):
+        N, *_ = x.shape
+        x_a, x_b = x.chunk(2, dim=1)
+        
+        nn_out = self.net(x_a)
+        log_s, t = (nn_out * torch.exp(self.scale * 3)).chunk(2, dim=1) # why *3?
+        s = F.sigmoid(log_s + 2) # again, why +2?
+        y = x_b / s - t
+        return torch.cat([x_a, y], dim=1)
+
+if __name__ == '__main__':
+    affn = AffineCoupling(8)
+    x = torch.randn(4, 8, 16, 16)
+    y, logdet = affn(x)
+    xr = affn.reverse(y)
+    print(x[0,0])
+    print(xr[0,0])
