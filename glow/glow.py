@@ -151,7 +151,12 @@ class Glow(HelperModule):
         return x
 
 if __name__ == '__main__':
-    glow = Glow(8, 4, 3, lu=False)
+    glow = Glow(
+        nb_channels=8, 
+        nb_blocks=4, 
+        nb_flows=3,
+        lu=True,
+    )
     x = torch.randn(4, 8, 128, 128)
     _, logdet, zs = glow(x)
     xr = glow.reverse(zs)
