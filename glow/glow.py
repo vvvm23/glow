@@ -65,6 +65,15 @@ class FlowBlock(HelperModule):
             .view(N, c * self.squeeze_rate**2, hx // self.squeeze_rate, wx // self.squeeze_rate)
         )
 
+    def _unsqueeze(self, x):
+        N, c, hx, wx = x.shape
+        return (
+            x.view(N, c // self.squeeze_rate**2, self.squeeze_rate, self.squeeze_rate, hx, wx)
+            .permute(0, 1, 4, 2, 5, 3)
+            .contiguous()
+            .view(N, c // self.squeeze_rate**2, hx * self.squeeze_rate, wx * self.squeeze_rate)
+        )
+
     def _gaussian_log_p(self, x, mean, log_s):
         return -0.5 * math.log(2 * math.pi) - log_sd - 0.5 * (x - mean) ** 2 / torch.exp(2 * log_sd)
 
@@ -91,7 +100,18 @@ class FlowBlock(HelperModule):
         return x, logdet_sum, log_p, z
 
     def reverse(self, x, eps=None, recon=False):
-        pass
+        if recon:
+            x = torch.cat([x, eps], dim=1) if self.split else eps
+        else:
+            prior_x = x if self.split else torch.zeros_like(x)
+            mean, log_sd = (self.prior(prior_x) * torch.exp(self.scale * 3)).chunk(2, dim=1)
+            z = self._gaussian_sample(eps, mean, log_sd)
+            x = torch.cat([x, z], dim=1) if self.split else z
+
+        for flow in self.flows[::-1]:
+            x = flow.reverse(x)
+
+        return self._unsqueeze(x)
 
 class Glow(HelperModule):
     def build(self,
