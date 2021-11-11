@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import math
+
 from .utils import HelperModule
 from .actnorm import ActNorm
 from .coupling import AffineCoupling
@@ -37,10 +39,56 @@ class FlowBlock(HelperModule):
             split:              bool = True,
             lu:                 bool = True,
         ):
-        pass
+        self.split = split
+        self.squeeze_rate = squeeze_rate
+        self.flows = nn.ModuleList([
+            Flow(nb_channels * squeeze_rate, lu=lu)
+            for _ in range(nb_flows)
+        ])
+        if split:
+            self.prior = nn.Conv2d(nb_channels*2, nb_channels*4, 3, padding=0)
+            self.prior.weight.data.zero_()
+            self.prior.bias.data.zero_()
+            self.scale = nn.Parameter(torch.zeros(1, nb_channels*4, 1, 1))
+        else:
+            self.prior = nn.Conv2d(nb_channels*4, nb_channels*8, 3, padding=0)
+            self.prior.weight.data.zero_()
+            self.prior.bias.data.zero_()
+            self.scale = nn.Parameter(torch.zeros(1, nb_channels*8, 1, 1))
+
+    def _squeeze(self, x):
+        N, c, hx, wx = x.shape
+        return (
+            x.view(N, c, hx // self.squeeze_rate, self.squeeze_rate, wx // self.squeeze_rate, self.squeeze_rate)
+            .permute(0, 1, 3, 5, 2, 4)
+            .contiguous()
+            .view(N, c * self.squeeze_rate**2, hx // self.squeeze_rate, wx // self.squeeze_rate)
+        )
+
+    def _gaussian_log_p(self, x, mean, log_s):
+        return -0.5 * math.log(2 * math.pi) - log_sd - 0.5 * (x - mean) ** 2 / torch.exp(2 * log_sd)
+
+    def _gaussian_sample(self, eps, mean, log_sd):
+        return mean + torch.exp(log_sd) * eps
 
     def forward(self, x):
-        pass
+        logdet_sum = 0.
+        x = self._squeeze(x)
+
+        for flow in self.flows:
+            x, logdet = flow(x)
+            logdet_sum = logdet_sum + logdet
+
+        if self.split:
+            x, z = x.chunk(2, dim=1)
+            prior_x = x
+        else:
+            prior_x = torch.zeros_like(x)
+
+        mean, log_sd = (self.prior(prior_x) * torch.exp(self.scale * 3)).chunk(2, dim=1)
+        log_p = self._gaussian_log_p(z if self.split else x, mean, log_sd).view(x.shape[0], -1).sum(-1)
+        z = z if self.split else x
+        return x, logdet_sum, log_p, z
 
     def reverse(self, x, eps=None, recon=False):
         pass
