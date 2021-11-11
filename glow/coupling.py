@@ -34,7 +34,7 @@ class AffineCoupling(HelperModule):
         
         nn_out = self.net(x_a)
         log_s, t = (nn_out * torch.exp(self.scale * 3)).chunk(2, dim=1) # why *3?
-        s = F.sigmoid(log_s + 2) # again, why +2?
+        s = torch.sigmoid(log_s + 2) # again, why +2?
         y = (x_b + t) * s
 
         return torch.cat([x_a, y], dim=1), torch.sum(torch.log(s).view(N, -1), dim=-1)
@@ -45,7 +45,7 @@ class AffineCoupling(HelperModule):
         
         nn_out = self.net(x_a)
         log_s, t = (nn_out * torch.exp(self.scale * 3)).chunk(2, dim=1) # why *3?
-        s = F.sigmoid(log_s + 2) # again, why +2?
+        s = torch.sigmoid(log_s + 2) # again, why +2?
         y = x_b / s - t
         return torch.cat([x_a, y], dim=1)
 
