@@ -39,6 +39,7 @@ class FlowBlock(HelperModule):
             split:              bool = True,
             lu:                 bool = True,
         ):
+        self.nb_channels = nb_channels
         self.split = split
         self.squeeze_rate = squeeze_rate
         self.flows = nn.ModuleList([
@@ -46,15 +47,15 @@ class FlowBlock(HelperModule):
             for _ in range(nb_flows)
         ])
         if split:
-            self.prior = nn.Conv2d(nb_channels*2, nb_channels*4, 3, padding=1)
+            self.prior = nn.Conv2d((nb_channels*squeeze_rate**2)//2, nb_channels*squeeze_rate**2, 3, padding=1)
             self.prior.weight.data.zero_()
             self.prior.bias.data.zero_()
-            self.scale = nn.Parameter(torch.zeros(1, nb_channels*4, 1, 1))
+            self.scale = nn.Parameter(torch.zeros(1, nb_channels*squeeze_rate**2, 1, 1))
         else:
-            self.prior = nn.Conv2d(nb_channels*4, nb_channels*8, 3, padding=1)
+            self.prior = nn.Conv2d(nb_channels*squeeze_rate**2, 2*nb_channels*squeeze_rate**2, 3, padding=1)
             self.prior.weight.data.zero_()
             self.prior.bias.data.zero_()
-            self.scale = nn.Parameter(torch.zeros(1, nb_channels*8, 1, 1))
+            self.scale = nn.Parameter(torch.zeros(1, 2*nb_channels*squeeze_rate**2, 1, 1))
 
     def _squeeze(self, x):
         N, c, hx, wx = x.shape
@@ -81,18 +82,23 @@ class FlowBlock(HelperModule):
         return mean + torch.exp(log_sd) * eps
 
     def forward(self, x):
+        # C x H x W
         logdet_sum = 0.
         x = self._squeeze(x)
+        # C*sr**2 x H//2 x W//2
 
         for flow in self.flows:
             x, logdet = flow(x)
             logdet_sum = logdet_sum + logdet
+        # C*sr**2 x H//2 x W//2
 
         if self.split:
             x, z = x.chunk(2, dim=1)
             prior_x = x
+            # (C*sr**2)//2 x H//2 x W//2
         else:
             prior_x = torch.zeros_like(x)
+            # C*sr**2 x H//2 x W//2
 
         mean, log_sd = (self.prior(prior_x) * torch.exp(self.scale * 3)).chunk(2, dim=1)
         log_p = self._gaussian_log_p(z if self.split else x, mean, log_sd).view(x.shape[0], -1).sum(-1)
@@ -123,7 +129,7 @@ class Glow(HelperModule):
         ):
         self.blocks = nn.ModuleList([
             FlowBlock(
-                nb_channels * (2**i), nb_flows, 
+                nb_channels * ((squeeze_rate**2)//2)**i, nb_flows, 
                 squeeze_rate=squeeze_rate, 
                 lu=lu, 
                 split = i < (nb_blocks - 1)
@@ -153,11 +159,12 @@ class Glow(HelperModule):
 if __name__ == '__main__':
     glow = Glow(
         nb_channels=8, 
-        nb_blocks=4, 
-        nb_flows=3,
+        nb_blocks=3, 
+        nb_flows=2,
+        squeeze_rate=4,
         lu=True,
     )
-    x = torch.randn(4, 8, 128, 128)
+    x = torch.randn(1, 8, 256, 256)
     _, logdet, zs = glow(x)
     xr = glow.reverse(zs)
     print(x[0,0])
