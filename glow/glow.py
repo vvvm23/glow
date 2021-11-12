@@ -127,6 +127,8 @@ class Glow(HelperModule):
             squeeze_rate:       int = 2,
             lu:                 bool = True,
         ):
+        self.nb_blocks = nb_blocks
+        self.squeeze_rate = squeeze_rate
         self.blocks = nn.ModuleList([
             FlowBlock(
                 nb_channels * ((squeeze_rate**2)//2)**i, nb_flows, 
@@ -155,6 +157,16 @@ class Glow(HelperModule):
         for i, blk in enumerate(self.blocks[::-1]):
             x = blk.reverse(x, zs[-(i+1)], recon=recon)
         return x
+
+    def get_latent_shapes(self, image_shape):
+        c, h, w = image_shape
+        z_shapes = []
+        for i in range(self.nb_blocks):
+            h //= self.squeeze_rate
+            w //= self.squeeze_rate
+            c *= (self.squeeze_rate**2)//2 if i < (self.nb_blocks - 1) else self.squeeze_rate**2
+            z_shapes.append((c, h, w))
+        return z_shapes
 
 if __name__ == '__main__':
     glow = Glow(

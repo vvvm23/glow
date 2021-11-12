@@ -7,10 +7,12 @@ import torch.nn.functional as F
 
 from torchvision import datasets
 from torchvision import transforms
+from torchvision.utils import save_image
 
-from math import log
+from math import log, sqrt
 
 from ptpt.trainer import Trainer, TrainerConfig
+from ptpt.callbacks import CallbackType
 from ptpt.log import debug, info, warning, error, critical
 from ptpt.utils import set_seed, get_parameter_count
 
@@ -23,13 +25,13 @@ def main(args):
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
     ])
-    train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
-    test_dataset = datasets.MNIST('data', train=False, download=True, transform=transform)
+    train_dataset = datasets.CIFAR10('data', train=True, download=True, transform=transform)
+    test_dataset = datasets.CIFAR10('data', train=False, download=True, transform=transform)
 
     net = Glow(
-        nb_channels = 1,
-        nb_blocks = 2,
-        nb_flows = 5,
+        nb_channels = 3,
+        nb_blocks = 4,
+        nb_flows = 4,
     )
 
     def loss_fn(net, batch):
@@ -54,7 +56,7 @@ def main(args):
 
     cfg = TrainerConfig(
         exp_name = 'mnist-glow',
-        batch_size = 1024,
+        batch_size = 512,
         learning_rate = 4e-4,
         nb_workers = 8,
         save_outputs = False,
@@ -69,8 +71,22 @@ def main(args):
         cfg = cfg,
     )
 
+    z_shapes = net.get_latent_shapes((3,32,32))
+    z_sample = [0.7*torch.randn(16, *zs).to(trainer.device) for zs in z_shapes]
+
+    @torch.inference_mode()
+    def callback_sample(trainer):
+        debug("saving Glow sample")
+        save_image(
+            net.reverse(z_sample).cpu(),
+            f"sample-{str(trainer.nb_updates).zfill(5)}.jpg",
+            normalize=True,
+            nrow=4,
+            value_range=(-1.0, 1.0),
+        )
+    trainer.register_callback(CallbackType.EvalEpoch, callback_sample)
+
     trainer.train()
 
 if __name__ == '__main__':
-    print("Aloha, World!")
     main(None)
