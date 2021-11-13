@@ -1,0 +1,13 @@
+[trainer]
+    exp_name = 'celeba-glow'
+    batch_size = 32
+    learning_rate = 0.0004
+
+[data]
+    name = 'celeba'
+    shape = [3, 64, 64]
+
+[glow]
+    nb_channels = 3
+    nb_blocks = 4
+    nb_flows = 32
