@@ -73,13 +73,17 @@ def main(args):
     @torch.inference_mode()
     def callback_sample(trainer):
         debug("saving Glow sample")
+        net.eval()
+        sample = net.reverse(z_sample).cpu()
         save_image(
-            net.reverse(z_sample).cpu(),
+            sample,
             f"sample-{str(trainer.nb_updates).zfill(5)}.jpg",
             normalize=True,
-            nrow=sqrt(args.nb_samples),
+            nrow=int(sqrt(args.nb_samples)),
             value_range=(-1.0, 1.0),
         )
+        net.train()
+
     trainer.register_callback(CallbackType.EvalEpoch, callback_sample)
 
     trainer.train()

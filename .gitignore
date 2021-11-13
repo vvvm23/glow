@@ -130,3 +130,5 @@ dmypy.json
 
 # start of my own additions #
 **/data/
+**/exp/
+**/*.jpg
