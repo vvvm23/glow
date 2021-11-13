@@ -4,7 +4,6 @@ import torch.nn.functional as F
 
 from .utils import HelperModule
 
-# TODO: worth also implementing additive coupling?
 class AffineCoupling(HelperModule):
     def build(self,
             nb_channels: int,
