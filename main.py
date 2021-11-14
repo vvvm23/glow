@@ -77,7 +77,7 @@ def main(args):
         sample = net.reverse(z_sample).cpu()
         save_image(
             sample,
-            f"sample-{str(trainer.nb_updates).zfill(5)}.jpg",
+            trainer.directories['root'] / f"sample-{str(trainer.nb_updates).zfill(6)}.jpg",
             normalize=True,
             nrow=int(sqrt(args.nb_samples)),
             value_range=(-1.0, 1.0),
