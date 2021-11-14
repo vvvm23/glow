@@ -2,6 +2,7 @@
     exp_name = 'celeba-glow'
     batch_size = 32
     learning_rate = 0.0004
+    checkpoint_frequency = 2000
 
 [data]
     name = 'celeba'
