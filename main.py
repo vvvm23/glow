@@ -25,7 +25,7 @@ def main(args):
 
     train_dataset, test_dataset = get_dataset(cfg.data['name'], cfg.data['shape'])
 
-    net = Glow(**cfg.glow)
+    net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
 
     def loss_fn(net, batch):
         X, _ = batch
@@ -97,6 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-save', action='store_true')
     parser.add_argument('--no-cuda', action='store_true')
     parser.add_argument('--no-amp', action='store_true')
+    parser.add_argument('--no-grad-checkpoint', action='store_true')
     parser.add_argument('--nb-workers', type=int, default=4)
     args = parser.parse_args()
 

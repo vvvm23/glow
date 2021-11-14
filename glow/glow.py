@@ -13,10 +13,11 @@ class Flow(HelperModule):
     def build(self, 
             nb_channels:        int,
             lu:                 bool = True,
+            grad_checkpoint:    bool = True,
         ):
         self.norm = ActNorm(nb_channels)
         self.conv = InvConv(nb_channels, lu)
-        self.coupling = AffineCoupling(nb_channels)
+        self.coupling = AffineCoupling(nb_channels, grad_checkpoint=grad_checkpoint)
 
     def forward(self, x):
         x, d1 = self.norm(x)
@@ -38,12 +39,13 @@ class FlowBlock(HelperModule):
             squeeze_rate:       int = 2,
             split:              bool = True,
             lu:                 bool = True,
+            grad_checkpoint:    bool = True,
         ):
         self.nb_channels = nb_channels
         self.split = split
         self.squeeze_rate = squeeze_rate
         self.flows = nn.ModuleList([
-            Flow(nb_channels * squeeze_rate**2, lu=lu)
+            Flow(nb_channels * squeeze_rate**2, lu=lu, grad_checkpoint=grad_checkpoint)
             for _ in range(nb_flows)
         ])
         if split:
@@ -126,6 +128,7 @@ class Glow(HelperModule):
             nb_flows:           int,
             squeeze_rate:       int = 2,
             lu:                 bool = True,
+            grad_checkpoint:    bool = True,
         ):
         self.nb_blocks = nb_blocks
         self.squeeze_rate = squeeze_rate
@@ -133,7 +136,8 @@ class Glow(HelperModule):
             FlowBlock(
                 nb_channels * ((squeeze_rate**2)//2)**i, nb_flows, 
                 squeeze_rate=squeeze_rate, 
-                lu=lu, 
+                lu=lu,
+                grad_checkpoint = grad_checkpoint,
                 split = i < (nb_blocks - 1)
             )
             for i in range(nb_blocks)

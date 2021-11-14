@@ -22,13 +22,14 @@ python main.py --cfg-path cfg.toml
 
 Other useful flags:
 ```
---nb-samples        # number of samples to generate when evaluating
---resume            # resume training from specified checkpoint
---seed              # set RNG seed 
---no-save           # disable saving of checkpoints
---no-cuda           # disable the use of CUDA device
---no-amp            # disable the use of automatic mixed precision
---nb-workers        # set number of dataloader workers.
+--nb-samples            # number of samples to generate when evaluating
+--resume                # resume training from specified checkpoint
+--seed                  # set RNG seed 
+--no-save               # disable saving of checkpoints
+--no-cuda               # disable the use of CUDA device
+--no-amp                # disable the use of automatic mixed precision
+--nb-workers            # set number of dataloader workers.
+--no-grad-checkpoint    # don't checkpoint gradients
 ```
 
 ## Samples

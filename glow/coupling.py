@@ -8,7 +8,9 @@ class AffineCoupling(HelperModule):
     def build(self,
             nb_channels: int,
             hidden_channels: int = 512,
+            grad_checkpoint: bool = True,
         ):
+        self.grad_checkpoint = grad_checkpoint
         self.net = nn.Sequential(
             nn.Conv2d(nb_channels // 2, hidden_channels, 3, padding=1),
             nn.SiLU(),
@@ -31,7 +33,8 @@ class AffineCoupling(HelperModule):
         N, *_ = x.shape
         x_a, x_b = x.chunk(2, dim=1)
         
-        nn_out = self.net(x_a)
+        # nn_out = self.net(x_a)
+        nn_out = torch.utils.checkpoint.checkpoint(self.net, x_a) if self.grad_checkpoint else self.net(x_a)
         log_s, t = (nn_out * torch.exp(self.scale * 3)).chunk(2, dim=1) # why *3?
         s = torch.sigmoid(log_s + 2) # again, why +2?
         y = (x_b + t) * s
