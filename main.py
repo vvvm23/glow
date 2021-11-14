@@ -72,6 +72,9 @@ def main(args):
 
     @torch.inference_mode()
     def callback_sample(trainer):
+        if not trainer.cfg.save_outputs:
+            return
+
         debug("saving Glow sample")
         net.eval()
         sample = net.reverse(z_sample).cpu()
