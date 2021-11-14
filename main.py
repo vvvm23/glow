@@ -23,7 +23,7 @@ def main(args):
     cfg = SimpleNamespace(**toml.load(args.cfg_path))
     seed = set_seed(args.seed)
 
-    train_dataset, test_dataset = get_dataset(cfg.data['name'])
+    train_dataset, test_dataset = get_dataset(cfg.data['name'], cfg.data['shape'])
 
     net = Glow(**cfg.glow)
 

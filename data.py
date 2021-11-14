@@ -101,7 +101,7 @@ class CelebADataset(torch.utils.data.Dataset):
     def __len__(self) -> int:
         return len(self.attr)
 
-def get_dataset(name):
+def get_dataset(name, shape):
     if name in ['cifar', 'cifar10']:
         transform=transforms.Compose([
             transforms.ToTensor(),
@@ -113,7 +113,7 @@ def get_dataset(name):
         transform=transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-            transforms.Resize((64, 64))
+            transforms.Resize(shape[1:])
         ])
         train_dataset = CelebADataset('data/celeba', split='train', transform=transform)
         test_dataset = CelebADataset('data/celeba', split='valid', transform=transform)
