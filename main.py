@@ -27,25 +27,45 @@ def main(args):
 
     net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
 
+    def calc_loss(log_p, logdet, nb_pixels):
+        loss = -log(256) * nb_pixels
+        loss = loss + logdet + log_p
+
+        return (
+            (-loss / (log(2) * nb_pixels)).mean(),
+            (log_p / (log(2) * nb_pixels)).mean(),
+            (logdet / (log(2) * nb_pixels)).mean(),
+        )
+
     def loss_fn(net, batch):
-        X, _ = batch
+        X = batch[0] * 2.0 - 1.0
         _, c, h, w = X.shape
         nb_pixels = c*h*w
 
         log_p, logdet, _ = net(X + torch.rand_like(X) / 256) # TODO: remove hardcoded quant levels
         logdet = logdet.mean()
+
+        return calc_loss(log_p, logdet, nb_pixels)
+
+    # def loss_fn(net, batch):
+        # X, _ = batch
+        # _, c, h, w = X.shape
+        # nb_pixels = c*h*w
+
+        # log_p, logdet, _ = net(X + torch.rand_like(X) / 256) # TODO: remove hardcoded quant levels
+        # logdet = logdet.mean()
         
-        loss = log(256) * nb_pixels - logdet - log_p
-        loss = loss / (log(2) * nb_pixels)
-        loss = loss.mean()
+        # loss = log(256) * nb_pixels - logdet - log_p
+        # loss = loss / (log(2) * nb_pixels)
+        # loss = loss.mean()
 
-        log_p = log_p / (log(2) * nb_pixels)
-        log_p = log_p.mean()
+        # log_p = log_p / (log(2) * nb_pixels)
+        # log_p = log_p.mean()
 
-        logdet = logdet / (log(2) * nb_pixels)
-        logdet = logdet.mean()
+        # logdet = logdet / (log(2) * nb_pixels)
+        # logdet = logdet.mean()
 
-        return loss, log_p, logdet
+        # return loss, log_p, logdet
 
     trainer_cfg = TrainerConfig(
         **cfg.trainer,
@@ -88,7 +108,6 @@ def main(args):
         net.train()
 
     trainer.register_callback(CallbackType.EvalEpoch, callback_sample)
-
     trainer.train()
 
 if __name__ == '__main__':

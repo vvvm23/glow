@@ -1,6 +1,6 @@
 [trainer]
     exp_name = 'cifar10-glow'
-    batch_size = 128
+    batch_size = 1024
     learning_rate = 0.0004
     checkpoint_frequency = 1000
 

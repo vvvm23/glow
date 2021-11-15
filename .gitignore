@@ -132,3 +132,4 @@ dmypy.json
 **/data/
 **/exp/
 **/*.jpg
+**/*.mp4
