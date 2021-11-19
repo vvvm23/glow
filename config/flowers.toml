@@ -1,17 +1,16 @@
 [trainer]
-    exp_name = 'celeba-glow'
+    exp_name = 'flowers-glow'
     batch_size = 192
     learning_rate = 0.0001
     checkpoint_frequency = 2000
-    nb_batches = [16, 4]
 
 [data]
-    name = 'celeba'
-    path = 'data/celeba/img_align_celeba/'
+    name = 'image'
+    path = '~/datasets/flowers'
     shape = [3, 64, 64]
 
 [glow]
     nb_channels = 3
     nb_blocks = 4
     nb_flows = 32
-    affine_coupling = false
+    affine_coupling = true

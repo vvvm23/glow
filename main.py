@@ -23,7 +23,7 @@ def main(args):
     cfg = SimpleNamespace(**toml.load(args.cfg_path))
     seed = set_seed(args.seed)
 
-    train_dataset, test_dataset = get_dataset(cfg.data['name'], cfg.data['shape'])
+    train_dataset, test_dataset = get_dataset(**cfg.data)
 
     net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
 
@@ -38,7 +38,8 @@ def main(args):
         )
 
     def loss_fn(net, batch):
-        X = batch[0] * 2.0 - 1.0
+        # X = batch[0] * 2.0 - 1.0
+        X, _ = batch
         _, c, h, w = X.shape
         nb_pixels = c*h*w
 
@@ -87,7 +88,8 @@ def main(args):
     if args.resume:
         trainer.load_checkpoint(args.resume)
     
-    z_shapes = net.get_latent_shapes(tuple(cfg.data['shape']))
+    # z_shapes = net.get_latent_shapes(tuple(cfg.data['shape']))
+    z_shapes = net.get_latent_shapes(test_dataset.__getitem__(0)[0].shape)
     z_sample = [0.7*torch.randn(args.nb_samples, *zs).to(trainer.device) for zs in z_shapes]
 
     @torch.inference_mode()

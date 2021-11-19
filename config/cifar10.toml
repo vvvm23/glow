@@ -12,3 +12,4 @@
     nb_channels = 3
     nb_blocks = 3
     nb_flows = 32
+    affine_coupling = true
