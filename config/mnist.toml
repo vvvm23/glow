@@ -1,12 +1,13 @@
 [trainer]
     exp_name = 'mnist-glow'
     batch_size = 1024
-    learning_rate = 0.0004
+    learning_rate = 0.001
     checkpoint_frequency = 1000
 
 [data]
     name = 'mnist'
     shape = [1, 28, 28]
+    nb_bits = 5
 
 [glow]
     nb_channels = 1

@@ -31,7 +31,7 @@ def main(args):
     net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
 
     def calc_loss(log_p, logdet, nb_pixels):
-        loss = -log(256) * nb_pixels
+        loss = -log(2**cfg.data['nb_bits']) * nb_pixels
         loss = loss + logdet + log_p
 
         return (
@@ -43,10 +43,8 @@ def main(args):
     def loss_fn(net, batch):
         # X = batch[0] * 2.0 - 1.0
         X, _ = batch
-        _, c, h, w = X.shape
-        # nb_pixels = c*h*w
 
-        log_p, logdet, _ = net(X + torch.rand_like(X) / 256) # TODO: remove hardcoded quant levels
+        log_p, logdet, _ = net(X + torch.rand_like(X) / (2**cfg.data['nb_bits'])) 
         logdet = logdet.mean()
 
         return calc_loss(log_p, logdet, nb_pixels)
@@ -72,10 +70,10 @@ def main(args):
         trainer.load_checkpoint(args.resume)
 
     @torch.no_grad()
-    def dry_run(self): # TODO: not sure if needed, but sanity check!
-        idx = np.random.choice(len(train_dataset), cfg.mini_batch_size, replace=False)
+    def dry_run(): # TODO: not sure if needed, but sanity check!
+        idx = np.random.choice(len(train_dataset), cfg.trainer['batch_size'], replace=False)
         X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0).to(trainer.device)
-        trainer.net(X + torch.randn_like(X) / 256)
+        trainer.net(X + torch.randn_like(X) / (2**cfg.data['nb_bits']))
     dry_run()
     
     z_shapes = net.get_latent_shapes(test_dataset.__getitem__(0)[0].shape)
@@ -92,9 +90,9 @@ def main(args):
         save_image(
             sample,
             trainer.directories['root'] / f"sample-{str(trainer.nb_updates).zfill(6)}.jpg",
-            normalize=True,
+            # normalize=True,
             nrow=int(sqrt(args.nb_samples)),
-            value_range=(-1.0, 1.0),
+            # value_range=(-1.0, 1.0),
         )
         net.train()
 

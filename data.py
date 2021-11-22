@@ -19,14 +19,16 @@ def get_dataset(
         path:               str = None, 
         eval_path:          str = None, 
         eval_percentage:    float = 0.1, 
+        nb_bits:            int = 8,
         shape: Tuple[int, int, int] = None,
     ):
     if name in ['image', 'custom']:
         transform=transforms.Compose([
             transforms.Resize(shape[1:]),
             transforms.RandomHorizontalFlip(),
+            transforms.RandomPosterize(nb_bits, p=1.0),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
         dataset = datasets.ImageFolder(path, transform=transform)
         if eval_path:
@@ -49,14 +51,16 @@ def get_dataset(
     elif name in ['cifar', 'cifar10']:
         transform=transforms.Compose([
             transforms.RandomHorizontalFlip(),
+            transforms.RandomPosterize(nb_bits, p=1.0),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
         train_dataset = datasets.CIFAR10('data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR10('data', train=False, download=True, transform=transform)
     elif name in ['mnist']:
         transform=transforms.Compose([
             # transforms.RandomHorizontalFlip(),
+            transforms.RandomPosterize(nb_bits, p=1.0),
             transforms.ToTensor(),
             # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
@@ -71,11 +75,13 @@ def get_dataset(
 
 if __name__ == '__main__':
     from torchvision.utils import save_image
-    _, test_dataset = get_dataset('image', '~/datasets/flowers/', shape=(3, 128, 128))
+    _, test_dataset = get_dataset('image', '~/datasets/flowers/', shape=(3, 128, 128), nb_bits=5)
+    x = test_dataset.__getitem__(123)[0]
+    print(x.min(), x.mean(), x.max())
     save_image(
         torch.stack([test_dataset.__getitem__(i)[0] for i in range(16)], dim=0),
         'test.jpg',
-        normalize=True,
+        # normalize=True,
         nrow=4,
-        value_range=(-1.0, 1.0),
+        # value_range=(-1.0, 1.0),
     )

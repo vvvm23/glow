@@ -8,6 +8,7 @@
     name = 'image'
     path = '~/datasets/flowers'
     shape = [3, 64, 64]
+    nb_bits = 5
 
 [glow]
     nb_channels = 3
