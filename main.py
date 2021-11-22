@@ -7,6 +7,8 @@ import torch.nn.functional as F
 
 from torchvision.utils import save_image
 
+import numpy as np
+
 import toml
 from math import log, sqrt
 from types import SimpleNamespace
@@ -24,6 +26,7 @@ def main(args):
     seed = set_seed(args.seed)
 
     train_dataset, test_dataset = get_dataset(**cfg.data)
+    nb_pixels = torch.numel(test_dataset.__getitem__(0)[0])
 
     net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
 
@@ -41,32 +44,12 @@ def main(args):
         # X = batch[0] * 2.0 - 1.0
         X, _ = batch
         _, c, h, w = X.shape
-        nb_pixels = c*h*w
+        # nb_pixels = c*h*w
 
         log_p, logdet, _ = net(X + torch.rand_like(X) / 256) # TODO: remove hardcoded quant levels
         logdet = logdet.mean()
 
         return calc_loss(log_p, logdet, nb_pixels)
-
-    # def loss_fn(net, batch):
-        # X, _ = batch
-        # _, c, h, w = X.shape
-        # nb_pixels = c*h*w
-
-        # log_p, logdet, _ = net(X + torch.rand_like(X) / 256) # TODO: remove hardcoded quant levels
-        # logdet = logdet.mean()
-        
-        # loss = log(256) * nb_pixels - logdet - log_p
-        # loss = loss / (log(2) * nb_pixels)
-        # loss = loss.mean()
-
-        # log_p = log_p / (log(2) * nb_pixels)
-        # log_p = log_p.mean()
-
-        # logdet = logdet / (log(2) * nb_pixels)
-        # logdet = logdet.mean()
-
-        # return loss, log_p, logdet
 
     trainer_cfg = TrainerConfig(
         **cfg.trainer,
@@ -87,8 +70,14 @@ def main(args):
 
     if args.resume:
         trainer.load_checkpoint(args.resume)
+
+    @torch.no_grad()
+    def dry_run(self): # TODO: not sure if needed, but sanity check!
+        idx = np.random.choice(len(train_dataset), cfg.mini_batch_size, replace=False)
+        X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0).to(trainer.device)
+        trainer.net(X + torch.randn_like(X) / 256)
+    dry_run()
     
-    # z_shapes = net.get_latent_shapes(tuple(cfg.data['shape']))
     z_shapes = net.get_latent_shapes(test_dataset.__getitem__(0)[0].shape)
     z_sample = [0.7*torch.randn(args.nb_samples, *zs).to(trainer.device) for zs in z_shapes]
 
