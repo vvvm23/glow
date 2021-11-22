@@ -27,7 +27,8 @@ class InvConv(HelperModule):
             self.register_buffer('l_eye', torch.eye(l_mask.shape[0]))
 
             self.w_l = nn.Parameter(w_l)
-            self.w_s = nn.Parameter(torch.log(torch.abs(w_s)))
+            # self.w_s = nn.Parameter(torch.log(torch.abs(w_s)))
+            self.w_s = nn.Parameter(w_s.abs().log())
             self.w_u = nn.Parameter(w_u)
         else:
             # initialize as a random rotation matrix
