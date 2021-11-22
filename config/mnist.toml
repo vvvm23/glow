@@ -1,0 +1,15 @@
+[trainer]
+    exp_name = 'mnist-glow'
+    batch_size = 1024
+    learning_rate = 0.0004
+    checkpoint_frequency = 1000
+
+[data]
+    name = 'mnist'
+    shape = [1, 28, 28]
+
+[glow]
+    nb_channels = 1
+    nb_blocks = 2
+    nb_flows = 32
+    affine_coupling = true

@@ -54,6 +54,14 @@ def get_dataset(
         ])
         train_dataset = datasets.CIFAR10('data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR10('data', train=False, download=True, transform=transform)
+    elif name in ['mnist']:
+        transform=transforms.Compose([
+            # transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+        train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
+        test_dataset = datasets.MNIST('data', train=False, download=True, transform=transform)
     else:
         msg = f"Unknown dataset '{name}'!"
         error(name)
@@ -63,7 +71,7 @@ def get_dataset(
 
 if __name__ == '__main__':
     from torchvision.utils import save_image
-    _, test_dataset = get_dataset('image', '~/datasets/flowers/', shape=(3, 64, 64))
+    _, test_dataset = get_dataset('image', '~/datasets/flowers/', shape=(3, 128, 128))
     save_image(
         torch.stack([test_dataset.__getitem__(i)[0] for i in range(16)], dim=0),
         'test.jpg',
