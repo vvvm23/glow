@@ -133,3 +133,5 @@ dmypy.json
 **/exp/
 **/*.jpg
 **/*.mp4
+**/*.m4a
+**/*.out

@@ -1,6 +1,6 @@
 [trainer]
     exp_name = 'mnist-glow'
-    batch_size = 1024
+    batch_size = 64
     learning_rate = 0.001
     checkpoint_frequency = 1000
 

@@ -1,18 +1,17 @@
 [trainer]
     exp_name = 'celeba-glow'
-    batch_size = 192
+    batch_size = 16
     learning_rate = 0.0001
     checkpoint_frequency = 2000
-    nb_batches = [16, 4]
 
 [data]
-    name = 'celeba'
+    name = 'image'
     path = 'data/celeba/img_align_celeba/'
-    shape = [3, 64, 64]
+    shape = [3, 128, 128]
     nb_bits = 5
 
 [glow]
     nb_channels = 3
-    nb_blocks = 4
+    nb_blocks = 5
     nb_flows = 32
     affine_coupling = false

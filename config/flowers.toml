@@ -1,8 +1,8 @@
 [trainer]
     exp_name = 'flowers-glow'
-    batch_size = 128
-    learning_rate = 0.0001
-    checkpoint_frequency = 2000
+    batch_size = 16
+    learning_rate = 0.00004
+    checkpoint_frequency = 500
 
 [data]
     name = 'image'
@@ -14,4 +14,4 @@
     nb_channels = 3
     nb_blocks = 4
     nb_flows = 32
-    affine_coupling = true
+    affine_coupling = false
