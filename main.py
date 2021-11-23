@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import toml
 from math import log, sqrt
 from types import SimpleNamespace
+from pathlib import Path
 
 from ptpt.trainer import Trainer, TrainerConfig
 from ptpt.callbacks import CallbackType
@@ -51,11 +52,14 @@ def interpolation_test(args):
     latent_a = [args.temperature * l for l in latent_a]
     latent_b = [args.temperature * l for l in latent_b]
 
+    save_dir = Path('samples-interpolate/')
+    save_dir.mkdir(exist_ok=True)
+
     for i, a in enumerate(torch.cat([torch.linspace(0.00, 1.00, 100), torch.linspace(1.00, 0.00, 100)])):
         sample = net.reverse([a * la + (1.0 - a) * lb for la, lb in zip(latent_a, latent_b)]).cpu()
         save_image(
             sample,
-            f"interpolation-{str(i).zfill(4)}.jpg",
+            save_dir / f"interpolation-{str(i).zfill(4)}.jpg",
             nrow=int(sqrt(args.nb_samples)),
         )
 
@@ -75,12 +79,15 @@ def temperature_test(args):
 
     z_shapes = net.get_latent_shapes(cfg.data['shape'])
     z_sample = [torch.randn(args.nb_samples, *zs).to(device) for zs in z_shapes]
+
+    save_dir = Path('samples-vtemp/')
+    save_dir.mkdir(exist_ok=True)
     
     for i, t in enumerate(torch.cat([torch.linspace(0.0, 2.0, 40), torch.linspace(2.0, 0.0, 40)])):
         sample = net.reverse([t*z for z in z_sample]).cpu()
         save_image(
             sample,
-            f"temperature-vary-{str(i).zfill(4)}.jpg",
+            save_dir / f"temperature-vary-{str(i).zfill(4)}.jpg",
             nrow=int(sqrt(args.nb_samples)),
         )
     # sample = make_grid(sample, nrow=int(sqrt(args.nb_samples)))
@@ -116,9 +123,16 @@ def sample(args):
 
 def main(args):
     if args.sample:
-        # temperature_test(args)
-        interpolation_test(args)
-        # sample(args)
+        if args.sample_mode == 'normal':
+            sample(args)
+        elif args.sample_mode == 'vtemp':
+            temperature_test(args)
+        elif args.sample_mode == 'interpolate':
+            interpolation_test(args)
+        else:
+            msg = f"Unrecognized sample mode '{args.sample_mode}!'"
+            error(msg)
+            raise ValueError(msg)
         exit()
 
     cfg = SimpleNamespace(**toml.load(args.cfg_path))
@@ -169,7 +183,7 @@ def main(args):
         trainer.load_checkpoint(args.resume)
 
     @torch.no_grad()
-    def dry_run(): # TODO: not sure if needed, but sanity check!
+    def dry_run(): 
         idx = np.random.choice(len(train_dataset), cfg.trainer['batch_size'], replace=False)
         X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0).to(trainer.device)
         trainer.net(X + torch.randn_like(X) / (2**cfg.data['nb_bits']))
@@ -189,9 +203,7 @@ def main(args):
         save_image(
             sample,
             trainer.directories['root'] / f"sample-{str(trainer.nb_updates).zfill(6)}.jpg",
-            # normalize=True,
             nrow=int(sqrt(args.nb_samples)),
-            # value_range=(-1.0, 1.0),
         )
         net.train()
 
@@ -210,6 +222,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-grad-checkpoint', action='store_true')
     parser.add_argument('--nb-workers', type=int, default=4)
     parser.add_argument('--sample', action='store_true')
+    parser.add_argument('--sample-mode', type=str, default='normal', choices=['normal', 'vtemp', 'interpolate'])
     parser.add_argument('--temperature', type=float, default=0.7)
     args = parser.parse_args()
 

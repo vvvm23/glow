@@ -135,3 +135,6 @@ dmypy.json
 **/*.mp4
 **/*.m4a
 **/*.out
+
+samples-vtemp/
+samples-interpolate/
