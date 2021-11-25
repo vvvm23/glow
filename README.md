@@ -11,6 +11,19 @@ This repository contain the Glow model code and associated training / sampling s
 
 ## Usage
 
+### Installation
+
+Build from source using:
+```
+python -m build
+pip install dist/pytorch_glow-X.Y.Z-py3-none-any.whl
+```
+
+Or from pip:
+```
+pip install pytorch_glow
+```
+
 ### Glow Training
 
 Run Glow training using config file `cfg.toml`. Defaults to `config/cifar10.toml`
@@ -61,7 +74,7 @@ The sampling modes are:
 - [X] Training script
 - [X] Sampling script
 - [X] Gradient checkpoints
-- [ ] PyPi library
+- [X] PyPi library
 - [ ] Add pretrained models / nice samples
 
 ### Citations:
