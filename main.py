@@ -4,6 +4,10 @@ logger = logging.getLogger('matplotlib.font_manager')
 logger.setLevel(logging.CRITICAL)
 logger.disabled = True
 
+logger = logging.getLogger('PIL.PngImagePlugin')
+logger.setLevel(logging.CRITICAL)
+logger.disabled = True
+
 import argparse
 
 import torch
