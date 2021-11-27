@@ -6,12 +6,12 @@
 
 [data]
     name = 'image'
-    path = 'data/ffhq128'
-    shape = [3, 128, 128]
+    path = 'data/ffhq1024'
+    shape = [3, 256, 256]
     nb_bits = 5
 
 [glow]
     nb_channels = 3
-    nb_blocks = 5
+    nb_blocks = 6
     nb_flows = 64
     affine_coupling = false

@@ -36,13 +36,20 @@ def interpolation_test(args):
     cfg = SimpleNamespace(**toml.load(args.cfg_path))
     seed = set_seed(args.seed)
 
-    device = get_device(not args.no_cuda)
-    net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
-
-    _, test_dataset = get_dataset(**cfg.data)
+    train_dataset, test_dataset = get_dataset(**cfg.data)
     idx = np.random.choice(len(test_dataset), 2*args.nb_samples, replace=False)
     batch_a = torch.stack([test_dataset.__getitem__(i)[0] for i in idx[:args.nb_samples]]).to(device)
     batch_b = torch.stack([test_dataset.__getitem__(i)[0] for i in idx[args.nb_samples:]]).to(device)
+
+    device = get_device(not args.no_cuda)
+    net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
+
+    @torch.no_grad()
+    def dry_run(): 
+        idx = np.random.choice(len(train_dataset), cfg.trainer['batch_size'], replace=False)
+        X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0)
+        net(X + torch.randn_like(X) / (2**cfg.data['nb_bits']))
+    dry_run()
 
     if args.resume:
         chk = torch.load(args.resume, map_location=device)
@@ -72,8 +79,17 @@ def temperature_test(args):
     cfg = SimpleNamespace(**toml.load(args.cfg_path))
     seed = set_seed(args.seed)
 
+    train_dataset, test_dataset = get_dataset(**cfg.data)
+
     device = get_device(not args.no_cuda)
     net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
+
+    @torch.no_grad()
+    def dry_run(): 
+        idx = np.random.choice(len(train_dataset), cfg.trainer['batch_size'], replace=False)
+        X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0)
+        net(X + torch.randn_like(X) / (2**cfg.data['nb_bits']))
+    dry_run()
 
     if args.resume:
         chk = torch.load(args.resume, map_location=device)
@@ -103,8 +119,17 @@ def sample(args):
     cfg = SimpleNamespace(**toml.load(args.cfg_path))
     seed = set_seed(args.seed)
 
+    train_dataset, test_dataset = get_dataset(**cfg.data)
+
     device = get_device(not args.no_cuda)
     net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
+
+    @torch.no_grad()
+    def dry_run(): 
+        idx = np.random.choice(len(train_dataset), cfg.trainer['batch_size'], replace=False)
+        X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0)
+        net(X + torch.randn_like(X) / (2**cfg.data['nb_bits']))
+    dry_run()
 
     if args.resume:
         chk = torch.load(args.resume, map_location=device)
@@ -147,6 +172,13 @@ def main(args):
 
     net = Glow(**cfg.glow, grad_checkpoint=not args.no_grad_checkpoint)
 
+    @torch.no_grad()
+    def dry_run(): 
+        idx = np.random.choice(len(train_dataset), cfg.trainer['batch_size'], replace=False)
+        X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0)
+        net(X + torch.randn_like(X) / (2**cfg.data['nb_bits']))
+    dry_run()
+
     def calc_loss(log_p, logdet, nb_pixels):
         loss = -log(2**cfg.data['nb_bits']) * nb_pixels
         loss = loss + logdet + log_p
@@ -185,13 +217,6 @@ def main(args):
 
     if args.resume:
         trainer.load_checkpoint(args.resume)
-
-    @torch.no_grad()
-    def dry_run(): 
-        idx = np.random.choice(len(train_dataset), cfg.trainer['batch_size'], replace=False)
-        X = torch.stack([train_dataset.__getitem__(i)[0] for i in idx], dim=0).to(trainer.device)
-        trainer.net(X + torch.randn_like(X) / (2**cfg.data['nb_bits']))
-    dry_run()
     
     z_shapes = net.get_latent_shapes(test_dataset.__getitem__(0)[0].shape)
     z_sample = [args.temperature*torch.randn(args.nb_samples, *zs).to(trainer.device) for zs in z_shapes]
